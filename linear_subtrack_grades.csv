@@ -1,0 +1,8 @@
+Title,Description,Project,Labels,Priority,Estimate,Milestone
+Grades app bootstrap,Next.js app under apps/grades with auth (share NextAuth). Link to shared packages.,SubTrack – Grades,"foundation,frontend",High,2,G0 – Kickoff
+DB: semesters & courses schema,Implement Prisma models Semester/Course with relations. Seed fixtures.,SubTrack – Grades,"db,backend",High,2,G0 – Kickoff
+Import: CSV/XLSX mapping UI,"Upload grade sheet, map columns (code,name,credits,grade,scale), preview then commit.",SubTrack – Grades,"frontend,backend,import",High,3,G1 – Usable
+OCR MVP for transcript images,Tesseract.js client-side OCR; text to rows; manual correction grid.,SubTrack – Grades,"ocr,frontend",Medium,3,G1 – Usable
+GPA & credits calculator,"Support 4.0/4.3/100 scales; per-semester GPA, cumulative GPA, credits by category.",SubTrack – Grades,"analytics,backend,frontend",High,3,G2 – Analytics
+Charts & summary cards,"Trend chart (semester GPA), pie for credit distribution, summary KPIs.",SubTrack – Grades,"frontend,charts,ui",Medium,2,G2 – Analytics
+Export report (CSV/PDF),Downloadable GPA/credit report; per-semester table. Basic PDF via print stylesheet.,SubTrack – Grades,"export,reporting",Low,2,G3 – Polish

@@ -1,0 +1,17 @@
+Title,Description,Project,Labels,Priority,Estimate,Milestone
+Project bootstrap: Monorepo & Turborepo,"Init monorepo (apps/submissions, apps/grades, packages/core|extract|notif|db). Setup pnpm, turbo, root scripts.",SubTrack – Submissions,"foundation,monorepo",High,2,M0 – Kickoff
+Auth: Google Sign‑in (NextAuth),Google OAuth + NextAuth in apps/submissions. Persist session; add protected pages guard.,SubTrack – Submissions,"auth,backend",High,3,M0 – Kickoff
+"DB: Prisma schema (users, submissions, attachments, history)","Implement schema, migrate, seed minimal data, generate client in packages/db.",SubTrack – Submissions,"db,backend",High,3,M0 – Kickoff
+UI shell: Sidebar + Header + Content + Theme,"Create layout, navigation (Dashboard / Submissions / Settings). Empty & loading states.",SubTrack – Submissions,"frontend,ui",High,2,M0 – Kickoff
+Create Submission: upload + filename parser,Upload to Supabase Storage; parse filename (subject/assignment/deadline); prefill form; user can override.,SubTrack – Submissions,"frontend,backend,storage,parser",High,3,M1 – Usable
+Submission list + filters + search,"Table view with columns: Title, Subject, Deadline, Status, Tags. Filter by status, tags; search notes.",SubTrack – Submissions,"frontend,ui",High,2,M1 – Usable
+Detail drawer + edit status/deadline/notes,Right drawer shows original metadata + attachments + history. Inline edit with optimistic update.,SubTrack – Submissions,"frontend,ui,product",High,2,M1 – Usable
+Kanban view by status,Switchable list/kanban with columns Draft/Submitted/InReview/Interview/Accepted/Rejected/Graded.,SubTrack – Submissions,"frontend,ui",Medium,2,M1 – Usable
+History/Audit trail,Record changes (status/deadline/notes). Show in drawer. Server timestamps.,SubTrack – Submissions,"backend,db,frontend",Medium,2,M1 – Usable
+.ics export for deadlines (MVP),Generate downloadable ICS per submission or batch for month. Add from list and detail drawer.,SubTrack – Submissions,"integration,calendar",Medium,2,M2 – Reminders & Calendar
+LINE Notify T‑3 reminder,Settings page stores LINE token. Cron job daily 08:00 Asia/Taipei sends reminders for deadlines in 3 days.,SubTrack – Submissions,"integration,notifications,cron",High,3,M2 – Reminders & Calendar
+Google Calendar sync (optional),OAuth Calendar scope; create/update/delete events per submission. Store eventId mapping.,SubTrack – Submissions,"integration,calendar,backend",Low,3,M2 – Reminders & Calendar
+Document text extraction (PDF/Word),pdf-parse/docx extraction service in packages/extract. Handle encoding; size limits; errors surfaced in UI.,SubTrack – Submissions,"documents,backend",High,2,M3 – Smarter Docs
+"Summarizer (extractive, no-paid-API)",Keyword/textrank style summary; 3–5 bullets; editable in drawer.,SubTrack – Submissions,"ai,backend,frontend",Medium,2,M3 – Smarter Docs
+Settings: timezone & reminder hour,User setting (default Asia/Taipei). Affect cron query and countdown UI.,SubTrack – Submissions,"frontend,backend,settings",Medium,1,M3 – Smarter Docs
+CI & deploy,Vercel deploy previews; typecheck; lint; Playwright smoke test (login + create submission).,SubTrack – Submissions,"devops,ci",High,2,M3 – Smarter Docs
