@@ -755,7 +755,7 @@ export default function Home() {
             </div>
             <p className="text-xs text-slate-400">最多可上傳 20 張 PNG、JPG、JPEG 圖片</p>
           </div>
-          <label className="mt-6 flex cursor-pointer flex-col items-center justify-center gap-3 rounded-2xl border-2 border-dashed border-slate-200 bg-slate-50 p-10 text-center transition hover:border-sky-300 hover:bg-sky-50/70">
+          <label className="mt-6 flex cursor-pointer flex-col items-center justify-center gap-4 rounded-3xl border-2 border-dashed border-slate-300 bg-slate-50/80 p-10 text-center shadow-inner transition hover:border-sky-300 hover:bg-sky-50">
             <span className="text-base font-medium text-slate-700">拖曳或點擊選擇檔案</span>
             <span className="text-xs text-slate-400">支援 PNG、JPG、JPEG 等常見格式</span>
             <input
@@ -767,13 +767,13 @@ export default function Home() {
             />
           </label>
           {images.length > 0 && (
-            <div className="mt-8 space-y-4">
+            <div className="mt-8 space-y-5">
               <h3 className="text-lg font-semibold text-slate-900">已選擇的成績單 ({images.length})</h3>
-              <div className="grid gap-4 sm:grid-cols-2">
+              <div className="grid gap-6 sm:grid-cols-2 xl:grid-cols-3">
                 {images.map((item, index) => (
                   <div
                     key={item.previewUrl}
-                    className="flex flex-col gap-3 rounded-2xl border border-slate-200 bg-slate-50 p-4 shadow-sm"
+                    className="flex flex-col gap-4 rounded-3xl border border-slate-200 bg-white/90 p-5 shadow-md shadow-slate-200/80 ring-1 ring-slate-200"
                   >
                     <div className="flex items-center justify-between">
                       <span className="text-sm font-medium text-slate-700">{item.termLabel}</span>
@@ -785,7 +785,7 @@ export default function Home() {
                         移除
                       </button>
                     </div>
-                    <div className="relative h-48 w-full overflow-hidden rounded-xl border border-slate-200 bg-white">
+                    <div className="relative h-48 w-full overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
                       <img
                         src={item.previewUrl}
                         alt={item.termLabel}
