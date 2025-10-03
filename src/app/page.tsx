@@ -225,11 +225,14 @@ function detectTableBounds(
     right = width - 1;
   }
 
+  const horizontalPadding = Math.round(width * 0.01);
+  const paddedLeft = Math.max(0, left - horizontalPadding);
+  const paddedRight = Math.min(width, right + horizontalPadding);
+
   const bounds: Bounds = {
-    x: Math.max(0, left - Math.round(width * 0.01)),
+    x: paddedLeft,
     y: top,
-    width: Math.min(width - Math.max(0, left - Math.round(width * 0.01)), right + Math.round(width * 0.01)) -
-      Math.max(0, left - Math.round(width * 0.01)),
+    width: Math.max(0, paddedRight - paddedLeft),
     height: Math.min(height - top, bottom - top),
   };
 
