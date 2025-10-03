@@ -62,6 +62,11 @@ type GpaRules = {
   gradeC: number;
 };
 
+type OcrWorker = Worker & {
+  loadLanguage: Worker["load"];
+  initialize: Worker["reinitialize"];
+};
+
 type ProcessingStep = {
   id: string;
   label: string;
@@ -86,6 +91,8 @@ const defaultGpaRules: GpaRules = {
   gradeB: 70,
   gradeC: 60,
 };
+
+type GpaRuleInputs = Record<keyof GpaRules, string>;
 
 const MAX_IMAGE_DIMENSION = 2400;
 
@@ -372,6 +379,11 @@ export default function Home() {
   const [sortKey, setSortKey] = useState<keyof CourseRecord>("score");
   const [sortDirection, setSortDirection] = useState<"asc" | "desc">("desc");
   const [gpaRules, setGpaRules] = useState<GpaRules>(defaultGpaRules);
+  const [gpaRuleInputValues, setGpaRuleInputValues] = useState<GpaRuleInputs>(() => ({
+    gradeA: defaultGpaRules.gradeA.toString(),
+    gradeB: defaultGpaRules.gradeB.toString(),
+    gradeC: defaultGpaRules.gradeC.toString(),
+  }));
   const [processingSteps, setProcessingSteps] = useState<ProcessingStep[]>([]);
 
   const updateProcessingStep = useCallback(
@@ -414,9 +426,26 @@ export default function Home() {
     setStatusMessage("");
   }, []);
 
-  const handleRuleChange = useCallback((key: keyof GpaRules, value: number) => {
-    setGpaRules((prev) => ({ ...prev, [key]: value }));
+  const handleRuleInputChange = useCallback((key: keyof GpaRules, rawValue: string) => {
+    setGpaRuleInputValues((prev) => ({ ...prev, [key]: rawValue }));
   }, []);
+
+  const commitRuleInput = useCallback(
+    (key: keyof GpaRules) => {
+      setGpaRuleInputValues((prev) => {
+        const trimmed = prev[key].trim();
+        const parsed = trimmed === "" ? Number.NaN : Number.parseFloat(trimmed);
+
+        if (!Number.isNaN(parsed)) {
+          setGpaRules((rules) => ({ ...rules, [key]: parsed }));
+          return { ...prev, [key]: parsed.toString() };
+        }
+
+        return { ...prev, [key]: gpaRules[key].toString() };
+      });
+    },
+    [gpaRules],
+  );
 
   const processTranscripts = useCallback(async () => {
     if (!images.length) {
@@ -430,7 +459,7 @@ export default function Home() {
 
     const initialSteps: ProcessingStep[] = [
       { id: "init-worker", label: "初始化 OCR 引擎", status: "active" },
-      { id: "load-language", label: "設定辨識參數", status: "pending" },
+      { id: "load-language", label: "載入語言與參數", status: "pending" },
       { id: "analyze-images", label: "定位成績表格", status: "pending" },
       { id: "recognize", label: "欄位切割與文字辨識", status: "pending" },
       { id: "summary", label: "彙整統計結果", status: "pending" },
@@ -441,7 +470,7 @@ export default function Home() {
 
     try {
       updateProcessingStep("init-worker", { detail: "建立 OCR 工作執行緒..." });
-      worker = await createWorker(["eng", "chi_tra"], undefined, {
+      worker = await createWorker(undefined, undefined, {
         logger: (message) => {
           if (message.status === "recognizing text") {
             const progress = Math.round(message.progress * 100);
@@ -453,6 +482,8 @@ export default function Home() {
           }
         },
       });
+      const activeWorker = worker as OcrWorker;
+
       updateProcessingStep("init-worker", {
         status: "done",
         detail: "OCR 執行緒就緒",
@@ -460,15 +491,17 @@ export default function Home() {
 
       updateProcessingStep("load-language", {
         status: "active",
-        detail: "套用最佳化辨識參數...",
+        detail: "下載並初始化語言模型...",
       });
-      await worker.setParameters({
+      await activeWorker.loadLanguage("eng+chi_tra");
+      await activeWorker.initialize("eng+chi_tra");
+      await activeWorker.setParameters({
         tessedit_pageseg_mode: PSM.SINGLE_BLOCK,
         preserve_interword_spaces: "1",
       });
       updateProcessingStep("load-language", {
         status: "done",
-        detail: "參數設定完成",
+        detail: "語言載入完成，開始辨識",
       });
 
       updateProcessingStep("analyze-images", {
@@ -821,27 +854,33 @@ export default function Home() {
             <label className="flex flex-col gap-2 rounded-2xl border border-emerald-500/20 bg-[#041321] p-5">
               <span className="text-xs font-semibold text-slate-300 sm:text-sm">A (4.0) 門檻</span>
               <input
-                type="number"
-                value={gpaRules.gradeA}
-                onChange={(event) => handleRuleChange("gradeA", Number(event.target.value))}
+                type="text"
+                inputMode="decimal"
+                value={gpaRuleInputValues.gradeA}
+                onChange={(event) => handleRuleInputChange("gradeA", event.target.value)}
+                onBlur={() => commitRuleInput("gradeA")}
                 className="rounded-lg border border-emerald-500/30 bg-[#020b16] px-3 py-2 text-sm text-emerald-100 focus:border-emerald-300 focus:outline-none focus:ring-2 focus:ring-emerald-400/30"
               />
             </label>
             <label className="flex flex-col gap-2 rounded-2xl border border-emerald-500/20 bg-[#041321] p-5">
               <span className="text-xs font-semibold text-slate-300 sm:text-sm">B (3.0) 門檻</span>
               <input
-                type="number"
-                value={gpaRules.gradeB}
-                onChange={(event) => handleRuleChange("gradeB", Number(event.target.value))}
+                type="text"
+                inputMode="decimal"
+                value={gpaRuleInputValues.gradeB}
+                onChange={(event) => handleRuleInputChange("gradeB", event.target.value)}
+                onBlur={() => commitRuleInput("gradeB")}
                 className="rounded-lg border border-emerald-500/30 bg-[#020b16] px-3 py-2 text-sm text-emerald-100 focus:border-emerald-300 focus:outline-none focus:ring-2 focus:ring-emerald-400/30"
               />
             </label>
             <label className="flex flex-col gap-2 rounded-2xl border border-emerald-500/20 bg-[#041321] p-5">
               <span className="text-xs font-semibold text-slate-300 sm:text-sm">C (2.0) 門檻</span>
               <input
-                type="number"
-                value={gpaRules.gradeC}
-                onChange={(event) => handleRuleChange("gradeC", Number(event.target.value))}
+                type="text"
+                inputMode="decimal"
+                value={gpaRuleInputValues.gradeC}
+                onChange={(event) => handleRuleInputChange("gradeC", event.target.value)}
+                onBlur={() => commitRuleInput("gradeC")}
                 className="rounded-lg border border-emerald-500/30 bg-[#020b16] px-3 py-2 text-sm text-emerald-100 focus:border-emerald-300 focus:outline-none focus:ring-2 focus:ring-emerald-400/30"
               />
             </label>
