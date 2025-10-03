@@ -1,5 +1,6 @@
 "use client";
 
+import NextImage from "next/image";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { createWorker, PSM, Worker } from "tesseract.js";
 
@@ -54,6 +55,7 @@ type ColumnDefinition = {
   label: string;
   start: number;
   end: number;
+  whitelist?: string;
 };
 
 type GpaRules = {
@@ -62,27 +64,15 @@ type GpaRules = {
   gradeC: number;
 };
 
-type OcrWorker = Worker & {
-  loadLanguage: Worker["load"];
-  initialize: Worker["reinitialize"];
-};
-
-type ProcessingStep = {
-  id: string;
-  label: string;
-  status: "pending" | "active" | "done" | "error";
-  detail?: string;
-};
-
 const columnLayout: ColumnDefinition[] = [
-  { key: "courseNumber", label: "課號", start: 0, end: 0.1 },
+  { key: "courseNumber", label: "課號", start: 0, end: 0.1, whitelist: "0123456789" },
   { key: "requirement", label: "必選修", start: 0.1, end: 0.18 },
   { key: "courseName", label: "課程名稱", start: 0.18, end: 0.32 },
   { key: "englishName", label: "English Course", start: 0.32, end: 0.56 },
   { key: "courseCode", label: "課程編碼", start: 0.56, end: 0.66 },
   { key: "stage", label: "階段", start: 0.66, end: 0.72 },
-  { key: "credits", label: "學分", start: 0.72, end: 0.78 },
-  { key: "score", label: "成績", start: 0.78, end: 0.86 },
+  { key: "credits", label: "學分", start: 0.72, end: 0.78, whitelist: "0123456789." },
+  { key: "score", label: "成績", start: 0.78, end: 0.86, whitelist: "0123456789." },
   { key: "remarks", label: "備註", start: 0.86, end: 1 },
 ];
 
@@ -91,10 +81,6 @@ const defaultGpaRules: GpaRules = {
   gradeB: 70,
   gradeC: 60,
 };
-
-type GpaRuleInputs = Record<keyof GpaRules, string>;
-
-const decimalInputPattern = /^(\d+(\.\d*)?|\.\d*)?$/;
 
 const MAX_IMAGE_DIMENSION = 2400;
 
@@ -234,14 +220,11 @@ function detectTableBounds(
     right = width - 1;
   }
 
-  const horizontalPadding = Math.round(width * 0.01);
-  const paddedLeft = Math.max(0, left - horizontalPadding);
-  const paddedRight = Math.min(width, right + horizontalPadding);
-
   const bounds: Bounds = {
-    x: paddedLeft,
+    x: Math.max(0, left - Math.round(width * 0.01)),
     y: top,
-    width: Math.max(0, paddedRight - paddedLeft),
+    width: Math.min(width - Math.max(0, left - Math.round(width * 0.01)), right + Math.round(width * 0.01)) -
+      Math.max(0, left - Math.round(width * 0.01)),
     height: Math.min(height - top, bottom - top),
   };
 
@@ -330,6 +313,7 @@ async function recognizeCell(
   sy: number,
   sw: number,
   sh: number,
+  whitelist?: string,
 ): Promise<string> {
   const cellCanvas = createCanvas(sw || 1, sh || 1);
   const context = cellCanvas.getContext("2d");
@@ -337,6 +321,12 @@ async function recognizeCell(
     throw new Error("Failed to get cell context");
   }
   context.drawImage(sourceCanvas, sx, sy, sw, sh, 0, 0, sw || 1, sh || 1);
+
+  if (whitelist) {
+    await worker.setParameters({ tessedit_char_whitelist: whitelist });
+  } else {
+    await worker.setParameters({ tessedit_char_whitelist: "" });
+  }
 
   const {
     data: { text },
@@ -376,26 +366,11 @@ function formatNumber(value: number | null, fractionDigits = 2): string {
 export default function Home() {
   const [images, setImages] = useState<UploadedImage[]>([]);
   const [records, setRecords] = useState<CourseRecord[]>([]);
-  const [statusMessage, setStatusMessage] = useState<string>("");
+  const [status, setStatus] = useState<string>("");
   const [isProcessing, setIsProcessing] = useState(false);
   const [sortKey, setSortKey] = useState<keyof CourseRecord>("score");
   const [sortDirection, setSortDirection] = useState<"asc" | "desc">("desc");
   const [gpaRules, setGpaRules] = useState<GpaRules>(defaultGpaRules);
-  const [gpaRuleInputValues, setGpaRuleInputValues] = useState<GpaRuleInputs>(() => ({
-    gradeA: defaultGpaRules.gradeA.toString(),
-    gradeB: defaultGpaRules.gradeB.toString(),
-    gradeC: defaultGpaRules.gradeC.toString(),
-  }));
-  const [processingSteps, setProcessingSteps] = useState<ProcessingStep[]>([]);
-
-  const updateProcessingStep = useCallback(
-    (id: string, patch: Partial<ProcessingStep>) => {
-      setProcessingSteps((previous) =>
-        previous.map((step) => (step.id === id ? { ...step, ...patch } : step)),
-      );
-    },
-    [],
-  );
 
   const handleFileSelection = useCallback((files: FileList | null) => {
     if (!files) return;
@@ -410,8 +385,6 @@ export default function Home() {
       return newImages;
     });
     setRecords([]);
-    setProcessingSteps([]);
-    setStatusMessage("");
   }, []);
 
   const handleRemoveImage = useCallback((index: number) => {
@@ -424,112 +397,41 @@ export default function Home() {
       return clone;
     });
     setRecords([]);
-    setProcessingSteps([]);
-    setStatusMessage("");
   }, []);
 
-  const handleRuleInputChange = useCallback((key: keyof GpaRules, rawValue: string) => {
-    if (!decimalInputPattern.test(rawValue)) {
-      return;
-    }
-
-    setGpaRuleInputValues((prev) => ({ ...prev, [key]: rawValue }));
+  const handleRuleChange = useCallback((key: keyof GpaRules, value: number) => {
+    setGpaRules((prev) => ({ ...prev, [key]: value }));
   }, []);
-
-  const commitRuleInput = useCallback(
-    (key: keyof GpaRules) => {
-      setGpaRuleInputValues((prev) => {
-        const trimmed = prev[key].trim();
-        const parsed = trimmed === "" ? Number.NaN : Number.parseFloat(trimmed);
-
-        if (!Number.isNaN(parsed)) {
-          setGpaRules((rules) => ({ ...rules, [key]: parsed }));
-          return { ...prev, [key]: parsed.toString() };
-        }
-
-        return { ...prev, [key]: gpaRules[key].toString() };
-      });
-    },
-    [gpaRules],
-  );
 
   const processTranscripts = useCallback(async () => {
     if (!images.length) {
-      setStatusMessage("請先上傳至少一張成績單圖片。");
+      setStatus("請先上傳至少一張成績單圖片。");
       return;
     }
 
     setIsProcessing(true);
-    setStatusMessage("準備開始分析，請稍候...");
+    setStatus("初始化 OCR 引擎中...");
     setRecords([]);
 
-    const initialSteps: ProcessingStep[] = [
-      { id: "init-worker", label: "初始化 OCR 引擎", status: "active" },
-      { id: "load-language", label: "載入語言與參數", status: "pending" },
-      { id: "analyze-images", label: "定位成績表格", status: "pending" },
-      { id: "recognize", label: "欄位切割與文字辨識", status: "pending" },
-      { id: "summary", label: "彙整統計結果", status: "pending" },
-    ];
-    setProcessingSteps(initialSteps);
-
-    let worker: Worker | null = null;
+    const worker = await createWorker(["eng", "chi_tra"], undefined, {
+      logger: (message) => {
+        if (message.status === "recognizing text") {
+          setStatus(`辨識中文字中... ${Math.round(message.progress * 100)}%`);
+        }
+      },
+    });
 
     try {
-      updateProcessingStep("init-worker", { detail: "建立 OCR 工作執行緒..." });
-      worker = await createWorker(undefined, undefined, {
-        logger: (message) => {
-          if (message.status === "recognizing text") {
-            const progress = Math.round(message.progress * 100);
-            setStatusMessage(`辨識中文字中... ${progress}%`);
-            updateProcessingStep("recognize", {
-              status: "active",
-              detail: `OCR 進度 ${progress}%`,
-            });
-          }
-        },
-      });
-      const activeWorker = worker as OcrWorker;
-
-      updateProcessingStep("init-worker", {
-        status: "done",
-        detail: "OCR 執行緒就緒",
-      });
-
-      updateProcessingStep("load-language", {
-        status: "active",
-        detail: "下載並初始化語言模型...",
-      });
-      await activeWorker.loadLanguage("eng+chi_tra");
-      await activeWorker.initialize("eng+chi_tra");
-      await activeWorker.setParameters({
+      await worker.setParameters({
         tessedit_pageseg_mode: PSM.SINGLE_BLOCK,
         preserve_interword_spaces: "1",
-      });
-      updateProcessingStep("load-language", {
-        status: "done",
-        detail: "語言載入完成，開始辨識",
-      });
-
-      updateProcessingStep("analyze-images", {
-        status: "active",
-        detail: `共 ${images.length} 張成績單圖片`,
       });
 
       const aggregated: CourseRecord[] = [];
 
       for (let index = 0; index < images.length; index += 1) {
         const image = images[index];
-        const progressLabel = `分析 ${image.termLabel} (${index + 1}/${images.length})`;
-        setStatusMessage(progressLabel);
-        updateProcessingStep("analyze-images", {
-          status: "active",
-          detail: progressLabel,
-        });
-        updateProcessingStep("recognize", {
-          status: "active",
-          detail: `辨識 ${image.termLabel} 的表格資料`,
-        });
-
+        setStatus(`分析 ${image.termLabel} (${index + 1}/${images.length})`);
         const htmlImage = await loadImage(image.file);
         const { canvas, context } = scaleImage(htmlImage);
         const baseData = context.getImageData(0, 0, canvas.width, canvas.height);
@@ -557,6 +459,7 @@ export default function Home() {
         for (let rowIndex = 0; rowIndex < rows.length; rowIndex += 1) {
           const row = rows[rowIndex];
           if (row.greenRatio > 0.1) {
+            // Skip header rows with large green area.
             continue;
           }
           const rowHeight = row.bottom - row.top;
@@ -594,6 +497,7 @@ export default function Home() {
               sy,
               sw,
               sh,
+              column.whitelist,
             );
             const cleaned = cleanupText(rawText);
             switch (column.key) {
@@ -620,52 +524,20 @@ export default function Home() {
         }
       }
 
-      updateProcessingStep("analyze-images", {
-        status: "done",
-        detail: `完成 ${images.length} 張圖片分析`,
-      });
-      updateProcessingStep("recognize", {
-        status: "done",
-        detail: "OCR 辨識完成",
-      });
-
-      updateProcessingStep("summary", {
-        status: "active",
-        detail: "計算學分與統計資訊...",
-      });
-
       setRecords(aggregated);
       if (aggregated.length === 0) {
-        setStatusMessage("完成辨識，但未偵測到有效的課程資料。請檢查圖片或調整設定。");
-        updateProcessingStep("summary", {
-          status: "error",
-          detail: "未偵測到有效資料",
-        });
+        setStatus("完成辨識，但未偵測到有效的課程資料。請檢查圖片或調整設定。");
       } else {
-        const successMessage = `完成！共擷取 ${aggregated.length} 筆課程資料。`;
-        setStatusMessage(successMessage);
-        updateProcessingStep("summary", {
-          status: "done",
-          detail: successMessage,
-        });
+        setStatus(`完成！共擷取 ${aggregated.length} 筆課程資料。`);
       }
     } catch (error) {
       console.error(error);
-      setStatusMessage("辨識過程發生錯誤，請稍後再試或更換圖片。");
-      setProcessingSteps((previous) =>
-        previous.map((step, index) =>
-          index === previous.length - 1
-            ? { ...step, status: "error", detail: "處理過程發生錯誤" }
-            : step,
-        ),
-      );
+      setStatus("辨識過程發生錯誤，請稍後再試或更換圖片。");
     } finally {
-      if (worker) {
-        await worker.terminate();
-      }
+      await worker.terminate();
       setIsProcessing(false);
     }
-  }, [images, updateProcessingStep]);
+  }, [images]);
 
   const sortedRecords = useMemo(() => {
     const clone = [...records];
@@ -739,66 +611,32 @@ export default function Home() {
     };
   }, [images]);
 
-  const stepIcons: Record<ProcessingStep["status"], string> = {
-    pending: "🕒",
-    active: "⚙️",
-    done: "✅",
-    error: "⚠️",
-  };
-
-  const stepTone: Record<ProcessingStep["status"], string> = {
-    pending: "border-slate-700/60 bg-[#0b2234]",
-    active: "border-sky-400/40 bg-[#0f2f45]",
-    done: "border-emerald-400/40 bg-[#0c362f]",
-    error: "border-rose-500/40 bg-[#3b141a]",
-  };
-
-  const stepTextTone: Record<ProcessingStep["status"], string> = {
-    pending: "text-slate-200",
-    active: "text-sky-200",
-    done: "text-emerald-200",
-    error: "text-rose-200",
-  };
-
   return (
-    <div className="min-h-screen bg-[#020b16] text-slate-100">
-      <div className="mx-auto flex w-full max-w-5xl flex-col gap-10 px-5 py-12 sm:px-8 lg:px-10">
-        <header className="rounded-3xl border border-emerald-500/20 bg-gradient-to-br from-[#071b2a] to-[#0b2234] px-8 py-10 text-center shadow-[0_40px_120px_-50px_rgba(16,185,129,0.55)]">
-          <span className="mx-auto inline-flex items-center gap-2 rounded-full border border-emerald-500/40 bg-emerald-500/10 px-5 py-2 text-sm font-semibold text-emerald-200">
+    <div className="min-h-screen bg-slate-950 text-slate-100">
+      <div className="mx-auto flex w-full max-w-6xl flex-col gap-10 px-6 py-12">
+        <header className="flex flex-col gap-4 text-center sm:text-left">
+          <h1 className="text-3xl font-bold text-emerald-300 sm:text-4xl">
             智慧成績單助理 Smart Transcript Assistant
-          </span>
-          <h1 className="mt-5 text-4xl font-semibold leading-snug text-emerald-100 sm:text-5xl">
-            成績整理、排序與 GPA 計算，一頁完成
           </h1>
-          <p className="mx-auto mt-4 max-w-2xl text-sm text-slate-300 sm:text-base">
-            依照清楚的流程上傳成績單、調整辨識設定、啟動 OCR，系統即時回傳整理好的課程清單與客製化 GPA 統計。
+          <p className="text-base text-slate-300 sm:text-lg">
+            上傳多張學期成績單，系統將自動定位表格、切割欄位、進行 OCR 辨識，並生成跨學期彙整、成績排序與客製化 GPA 分析。
           </p>
-          <div className="mt-7 flex flex-wrap justify-center gap-3 text-xs font-semibold text-emerald-200/80 sm:text-sm">
-            <span className="inline-flex items-center gap-2 rounded-full border border-emerald-500/30 bg-emerald-500/10 px-4 py-2">① 上傳成績單</span>
-            <span className="inline-flex items-center gap-2 rounded-full border border-emerald-500/30 bg-emerald-500/10 px-4 py-2">② 設定規則</span>
-            <span className="inline-flex items-center gap-2 rounded-full border border-emerald-500/30 bg-emerald-500/10 px-4 py-2">③ 智慧辨識</span>
-            <span className="inline-flex items-center gap-2 rounded-full border border-emerald-500/30 bg-emerald-500/10 px-4 py-2">④ 彙整結果</span>
-          </div>
         </header>
 
-        <section className="rounded-3xl border border-emerald-500/20 bg-[#071b2a] px-6 py-8 sm:px-8 sm:py-9 lg:px-10">
-          <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-            <div className="flex items-center gap-4">
-              <span className="flex h-12 w-12 items-center justify-center rounded-2xl border border-emerald-500/40 bg-emerald-500/10 text-lg font-semibold text-emerald-200">
-                1
-              </span>
-              <div>
-                <h2 className="text-lg font-semibold text-emerald-100 sm:text-xl">上傳成績單圖片</h2>
-                <p className="mt-1 text-xs text-slate-300 sm:text-sm">
-                  支援一次匯入多張圖片，保留彩色版本可提升綠色標題列的定位準確度。
-                </p>
-              </div>
-            </div>
-            <p className="text-xs text-slate-400">最多 20 張 PNG、JPG 或 JPEG 檔案</p>
+        <section className="grid gap-6 rounded-2xl border border-emerald-500/30 bg-slate-900/60 p-6 shadow-xl">
+          <div className="flex flex-col gap-2">
+            <h2 className="text-xl font-semibold text-emerald-200">1. 上傳成績單圖片</h2>
+            <p className="text-sm text-slate-300">
+              支援一次上傳多張圖片。建議保留原始彩色檔案，可提高綠色標題列的偵測準確度。
+            </p>
           </div>
-          <label className="mt-6 flex cursor-pointer flex-col items-center justify-center gap-4 rounded-2xl border-2 border-dashed border-emerald-500/35 bg-[#041321] px-8 py-12 text-center transition hover:border-emerald-400/60 hover:bg-[#062035]">
-            <span className="text-base font-medium text-emerald-100">拖曳或點擊選擇成績單圖片</span>
-            <span className="text-xs text-slate-400">支援 PNG、JPG、JPEG 等常見格式</span>
+          <label className="flex cursor-pointer flex-col items-center justify-center gap-3 rounded-xl border border-dashed border-emerald-400/50 bg-slate-950/70 p-8 text-center transition hover:border-emerald-300 hover:bg-slate-900/70">
+            <span className="text-base font-medium text-emerald-200">
+              點擊或拖曳檔案至此處
+            </span>
+            <span className="text-xs text-slate-400">
+              支援 PNG、JPG、JPEG 等常見圖片格式
+            </span>
             <input
               type="file"
               accept="image/*"
@@ -808,30 +646,33 @@ export default function Home() {
             />
           </label>
           {images.length > 0 && (
-            <div className="mt-8 space-y-5">
-              <h3 className="text-sm font-semibold text-emerald-100 sm:text-base">已選擇的成績單 ({images.length})</h3>
-              <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
+            <div className="grid gap-4">
+              <h3 className="text-lg font-semibold text-emerald-200">已選擇的圖片</h3>
+              <div className="grid gap-4 sm:grid-cols-2">
                 {images.map((item, index) => (
                   <div
                     key={item.previewUrl}
-                    className="flex flex-col gap-4 rounded-2xl border border-emerald-500/20 bg-[#041321] p-4 shadow-[0_0_0_1px_rgba(16,185,129,0.08)]"
+                    className="flex flex-col gap-3 rounded-xl border border-slate-700/60 bg-slate-950/60 p-4"
                   >
                     <div className="flex items-center justify-between">
-                      <span className="text-xs font-medium text-emerald-100 sm:text-sm">{item.termLabel}</span>
+                      <span className="text-sm font-medium text-emerald-100">
+                        {item.termLabel}
+                      </span>
                       <button
                         type="button"
-                        className="text-xs font-semibold text-rose-300 transition hover:text-rose-200"
+                        className="text-xs text-rose-300 transition hover:text-rose-200"
                         onClick={() => handleRemoveImage(index)}
                       >
                         移除
                       </button>
                     </div>
-                    <div className="relative h-44 w-full overflow-hidden rounded-xl border border-emerald-500/20 bg-[#020b16]">
-                      <img
+                    <div className="relative h-48 w-full overflow-hidden rounded-lg border border-slate-800">
+                      <NextImage
                         src={item.previewUrl}
                         alt={item.termLabel}
-                        className="h-full w-full object-cover"
-                        loading="lazy"
+                        fill
+                        className="object-cover"
+                        sizes="(max-width: 640px) 100vw, 50vw"
                       />
                     </div>
                   </div>
@@ -841,174 +682,99 @@ export default function Home() {
           )}
         </section>
 
-        <section className="rounded-3xl border border-emerald-500/20 bg-[#071b2a] px-6 py-8 sm:px-8 sm:py-9 lg:px-10">
-          <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-            <div className="flex items-center gap-4">
-              <span className="flex h-12 w-12 items-center justify-center rounded-2xl border border-emerald-500/40 bg-emerald-500/10 text-lg font-semibold text-emerald-200">
-                2
-              </span>
-              <div>
-                <h2 className="text-lg font-semibold text-emerald-100 sm:text-xl">設定客製化 GPA 規則</h2>
-                <p className="mt-1 text-xs text-slate-300 sm:text-sm">
-                  預設為 80 分 = 4.0、70 分 = 3.0、60 分 = 2.0，可依校系規定調整臨界值。
-                </p>
-              </div>
+        <section className="grid gap-6 rounded-2xl border border-emerald-500/30 bg-slate-900/60 p-6 shadow-xl">
+          <div className="flex flex-col gap-2">
+            <h2 className="text-xl font-semibold text-emerald-200">2. 設定 GPA 規則</h2>
+            <p className="text-sm text-slate-300">
+              預設規則：80 分以上 = 4.0、70 分以上 = 3.0、60 分以上 = 2.0。您可依需求微調門檻值。
+            </p>
+          </div>
+          <div className="grid gap-4 sm:grid-cols-3">
+            <label className="flex flex-col gap-2 rounded-xl border border-slate-700/60 bg-slate-950/60 p-4">
+              <span className="text-sm text-slate-300">A (4.0) 門檻</span>
+              <input
+                type="number"
+                value={gpaRules.gradeA}
+                onChange={(event) => handleRuleChange("gradeA", Number(event.target.value))}
+                className="rounded-lg border border-slate-700 bg-slate-900 px-3 py-2 text-slate-100 focus:border-emerald-400 focus:outline-none"
+              />
+            </label>
+            <label className="flex flex-col gap-2 rounded-xl border border-slate-700/60 bg-slate-950/60 p-4">
+              <span className="text-sm text-slate-300">B (3.0) 門檻</span>
+              <input
+                type="number"
+                value={gpaRules.gradeB}
+                onChange={(event) => handleRuleChange("gradeB", Number(event.target.value))}
+                className="rounded-lg border border-slate-700 bg-slate-900 px-3 py-2 text-slate-100 focus:border-emerald-400 focus:outline-none"
+              />
+            </label>
+            <label className="flex flex-col gap-2 rounded-xl border border-slate-700/60 bg-slate-950/60 p-4">
+              <span className="text-sm text-slate-300">C (2.0) 門檻</span>
+              <input
+                type="number"
+                value={gpaRules.gradeC}
+                onChange={(event) => handleRuleChange("gradeC", Number(event.target.value))}
+                className="rounded-lg border border-slate-700 bg-slate-900 px-3 py-2 text-slate-100 focus:border-emerald-400 focus:outline-none"
+              />
+            </label>
+          </div>
+          <button
+            type="button"
+            onClick={processTranscripts}
+            disabled={isProcessing || images.length === 0}
+            className="flex items-center justify-center gap-2 rounded-xl bg-emerald-400 px-4 py-3 text-base font-semibold text-slate-950 shadow-lg shadow-emerald-500/40 transition hover:bg-emerald-300 disabled:cursor-not-allowed disabled:bg-slate-600"
+          >
+            {isProcessing ? "分析中..." : "開始辨識與彙整"}
+          </button>
+          {status && (
+            <div className="rounded-xl border border-emerald-400/40 bg-slate-950/60 p-4 text-sm text-emerald-100">
+              {status}
             </div>
-            <p className="text-xs text-slate-400">調整後會立即反映於下方統計</p>
-          </div>
-          <div className="mt-6 grid gap-4 sm:grid-cols-3">
-            <label className="flex flex-col gap-2 rounded-2xl border border-emerald-500/20 bg-[#041321] p-5">
-              <span className="text-xs font-semibold text-slate-300 sm:text-sm">A (4.0) 門檻</span>
-              <input
-                type="text"
-                inputMode="decimal"
-                value={gpaRuleInputValues.gradeA}
-                onChange={(event) => handleRuleInputChange("gradeA", event.target.value)}
-                onBlur={() => commitRuleInput("gradeA")}
-                className="rounded-lg border border-emerald-500/30 bg-[#020b16] px-3 py-2 text-sm text-emerald-100 focus:border-emerald-300 focus:outline-none focus:ring-2 focus:ring-emerald-400/30"
-              />
-            </label>
-            <label className="flex flex-col gap-2 rounded-2xl border border-emerald-500/20 bg-[#041321] p-5">
-              <span className="text-xs font-semibold text-slate-300 sm:text-sm">B (3.0) 門檻</span>
-              <input
-                type="text"
-                inputMode="decimal"
-                value={gpaRuleInputValues.gradeB}
-                onChange={(event) => handleRuleInputChange("gradeB", event.target.value)}
-                onBlur={() => commitRuleInput("gradeB")}
-                className="rounded-lg border border-emerald-500/30 bg-[#020b16] px-3 py-2 text-sm text-emerald-100 focus:border-emerald-300 focus:outline-none focus:ring-2 focus:ring-emerald-400/30"
-              />
-            </label>
-            <label className="flex flex-col gap-2 rounded-2xl border border-emerald-500/20 bg-[#041321] p-5">
-              <span className="text-xs font-semibold text-slate-300 sm:text-sm">C (2.0) 門檻</span>
-              <input
-                type="text"
-                inputMode="decimal"
-                value={gpaRuleInputValues.gradeC}
-                onChange={(event) => handleRuleInputChange("gradeC", event.target.value)}
-                onBlur={() => commitRuleInput("gradeC")}
-                className="rounded-lg border border-emerald-500/30 bg-[#020b16] px-3 py-2 text-sm text-emerald-100 focus:border-emerald-300 focus:outline-none focus:ring-2 focus:ring-emerald-400/30"
-              />
-            </label>
-          </div>
+          )}
         </section>
 
-        <section className="rounded-3xl border border-emerald-500/20 bg-[#071b2a] px-6 py-8 sm:px-8 sm:py-9 lg:px-10">
-          <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-            <div className="flex items-center gap-4">
-              <span className="flex h-12 w-12 items-center justify-center rounded-2xl border border-emerald-500/40 bg-emerald-500/10 text-lg font-semibold text-emerald-200">
-                3
-              </span>
-              <div>
-                <h2 className="text-lg font-semibold text-emerald-100 sm:text-xl">啟動智慧辨識流程</h2>
-                <p className="mt-1 text-xs text-slate-300 sm:text-sm">
-                  自動定位表格、進行 OCR、整理課程與統計數據，進度會即時顯示於下方。
-                </p>
-              </div>
-            </div>
-            <button
-              type="button"
-              onClick={processTranscripts}
-              disabled={isProcessing || images.length === 0}
-              className="inline-flex items-center justify-center gap-2 rounded-full bg-emerald-500 px-6 py-3 text-sm font-semibold text-[#041321] shadow-[0_20px_45px_-25px_rgba(16,185,129,0.8)] transition hover:bg-emerald-400 disabled:cursor-not-allowed disabled:bg-slate-600 disabled:text-slate-300"
-            >
-              {isProcessing ? "系統分析中..." : "開始辨識"}
-            </button>
+        <section className="grid gap-6 rounded-2xl border border-emerald-500/30 bg-slate-900/60 p-6 shadow-xl">
+          <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+            <h2 className="text-xl font-semibold text-emerald-200">3. 成績統計與排序</h2>
+            <p className="text-sm text-slate-300">
+              共 {records.length} 門課程，依照任一欄位點擊即可排序。
+            </p>
           </div>
-
-          <div className="mt-6 space-y-4">
-            {statusMessage && (
-              <div className="rounded-2xl border border-emerald-500/30 bg-emerald-500/10 px-4 py-3 text-sm text-emerald-100">
-                {statusMessage}
-              </div>
-            )}
-
-            <div className="rounded-2xl border border-emerald-500/20 bg-[#041321] p-6">
-              <h3 className="text-sm font-semibold text-emerald-100 sm:text-base">即時處理進度</h3>
-              <p className="mt-1 text-xs text-slate-400">
-                依序顯示每個步驟的狀態與細節說明，掌握整體辨識過程。
-              </p>
-              <ul className="mt-4 space-y-3">
-                {processingSteps.length > 0 ? (
-                  processingSteps.map((step) => (
-                    <li
-                      key={step.id}
-                      className={`rounded-2xl border px-4 py-4 transition ${stepTone[step.status]}`}
-                    >
-                      <div className="flex items-start gap-3">
-                        <span className="text-xl" aria-hidden="true">{stepIcons[step.status]}</span>
-                        <div>
-                          <p className={`text-sm font-semibold ${stepTextTone[step.status]}`}>
-                            {step.label}
-                          </p>
-                          <p className="mt-1 text-xs text-slate-300">
-                            {step.detail ?? "等待開始"}
-                          </p>
-                        </div>
-                      </div>
-                    </li>
-                  ))
-                ) : (
-                  <li className="rounded-2xl border border-dashed border-emerald-500/25 bg-[#020b16] px-4 py-6 text-center text-sm text-slate-400">
-                    尚未開始辨識。請完成前兩步驟後點擊「開始辨識」。
-                  </li>
-                )}
-              </ul>
-            </div>
-          </div>
-        </section>
-
-        <section className="rounded-3xl border border-emerald-500/20 bg-[#071b2a] px-6 py-8 sm:px-8 sm:py-9 lg:px-10">
-          <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-            <div className="flex items-center gap-4">
-              <span className="flex h-12 w-12 items-center justify-center rounded-2xl border border-emerald-500/40 bg-emerald-500/10 text-lg font-semibold text-emerald-200">
-                4
-              </span>
-              <div>
-                <h2 className="text-lg font-semibold text-emerald-100 sm:text-xl">成果總覽與排序</h2>
-                <p className="mt-1 text-xs text-slate-300 sm:text-sm">
-                  彙整所有課程資料，提供學分統計、成績排序與自訂 GPA 計算。
-                </p>
-              </div>
-            </div>
-            <p className="text-xs text-slate-400">點擊欄位標題即可切換排序方式</p>
-          </div>
-
-          <div className="mt-6 grid gap-4 rounded-2xl border border-emerald-500/20 bg-[#041321] p-6 sm:grid-cols-2 lg:grid-cols-4">
+          <div className="grid gap-4 rounded-xl border border-slate-700/60 bg-slate-950/60 p-4 sm:grid-cols-4">
             <div className="flex flex-col gap-1">
-              <span className="text-[11px] uppercase tracking-wide text-slate-400">總學分</span>
-              <span className="text-2xl font-semibold text-emerald-100">
+              <span className="text-xs uppercase tracking-wide text-slate-400">總學分</span>
+              <span className="text-xl font-semibold text-emerald-200">
                 {formatNumber(summary.totalCredits, 1)}
               </span>
             </div>
             <div className="flex flex-col gap-1">
-              <span className="text-[11px] uppercase tracking-wide text-slate-400">加權平均分數</span>
-              <span className="text-2xl font-semibold text-emerald-100">
+              <span className="text-xs uppercase tracking-wide text-slate-400">加權平均分數</span>
+              <span className="text-xl font-semibold text-emerald-200">
                 {formatNumber(summary.weightedScore)}
               </span>
             </div>
             <div className="flex flex-col gap-1">
-              <span className="text-[11px] uppercase tracking-wide text-slate-400">算術平均分數</span>
-              <span className="text-2xl font-semibold text-emerald-100">
+              <span className="text-xs uppercase tracking-wide text-slate-400">算術平均分數</span>
+              <span className="text-xl font-semibold text-emerald-200">
                 {formatNumber(summary.averageScore)}
               </span>
             </div>
             <div className="flex flex-col gap-1">
-              <span className="text-[11px] uppercase tracking-wide text-slate-400">自訂 GPA</span>
-              <span className="text-2xl font-semibold text-emerald-100">
+              <span className="text-xs uppercase tracking-wide text-slate-400">自訂 GPA</span>
+              <span className="text-xl font-semibold text-emerald-200">
                 {formatNumber(summary.gpa)}
               </span>
             </div>
           </div>
-          <div className="mt-6 overflow-x-auto">
-            <table className="min-w-full divide-y divide-emerald-500/20 text-sm text-slate-200">
-              <thead className="bg-[#041b2a] text-xs uppercase tracking-wide text-emerald-200">
+          <div className="overflow-x-auto">
+            <table className="min-w-full divide-y divide-slate-800 text-sm">
+              <thead className="bg-slate-950/80 text-xs uppercase tracking-wide text-slate-400">
                 <tr>
                   <th className="px-3 py-3 text-left">學期</th>
                   {columnLayout.map((column) => (
                     <th
                       key={column.key}
-                      className="cursor-pointer px-3 py-3 text-left transition hover:text-emerald-200/80"
+                      className="cursor-pointer px-3 py-3 text-left transition hover:text-emerald-200"
                       onClick={() => handleSort(column.key as keyof CourseRecord)}
                     >
                       {column.label}
@@ -1021,28 +787,25 @@ export default function Home() {
                   ))}
                 </tr>
               </thead>
-              <tbody className="divide-y divide-emerald-500/10">
-                {sortedRecords.map((record, index) => (
-                  <tr
-                    key={record.id}
-                    className={index % 2 === 0 ? "bg-[#031321]" : "bg-[#04192a]"}
-                  >
+              <tbody className="divide-y divide-slate-800 text-slate-100">
+                {sortedRecords.map((record) => (
+                  <tr key={record.id} className="hover:bg-slate-800/40">
                     <td className="px-3 py-3 text-slate-300">{record.term}</td>
                     <td className="px-3 py-3 font-medium text-emerald-100">
                       {record.courseNumber || "-"}
                     </td>
-                    <td className="px-3 py-3 text-slate-300">{record.requirement || "-"}</td>
-                    <td className="px-3 py-3 text-slate-300">{record.courseName || "-"}</td>
-                    <td className="px-3 py-3 text-slate-300">{record.englishName || "-"}</td>
-                    <td className="px-3 py-3 text-slate-300">{record.courseCode || "-"}</td>
-                    <td className="px-3 py-3 text-slate-300">{record.stage || "-"}</td>
-                    <td className="px-3 py-3 text-right text-emerald-100">
+                    <td className="px-3 py-3">{record.requirement || "-"}</td>
+                    <td className="px-3 py-3">{record.courseName || "-"}</td>
+                    <td className="px-3 py-3">{record.englishName || "-"}</td>
+                    <td className="px-3 py-3">{record.courseCode || "-"}</td>
+                    <td className="px-3 py-3">{record.stage || "-"}</td>
+                    <td className="px-3 py-3 text-right">
                       {record.credits !== null ? formatNumber(record.credits, 1) : "-"}
                     </td>
-                    <td className="px-3 py-3 text-right text-emerald-100">
+                    <td className="px-3 py-3 text-right">
                       {record.score !== null ? formatNumber(record.score) : "-"}
                     </td>
-                    <td className="px-3 py-3 text-slate-400">{record.remarks || "-"}</td>
+                    <td className="px-3 py-3 text-slate-300">{record.remarks || "-"}</td>
                   </tr>
                 ))}
                 {!records.length && (
@@ -1060,9 +823,9 @@ export default function Home() {
           </div>
         </section>
 
-        <section className="rounded-3xl border border-emerald-500/20 bg-[#071b2a] px-6 py-8 sm:px-8 sm:py-9 lg:px-10">
-          <h2 className="text-lg font-semibold text-emerald-100 sm:text-xl">使用小提示</h2>
-          <ul className="mt-4 list-disc space-y-2 pl-5 text-sm text-slate-300">
+        <section className="grid gap-4 rounded-2xl border border-emerald-500/30 bg-slate-900/60 p-6 shadow-xl">
+          <h2 className="text-xl font-semibold text-emerald-200">使用小提示</h2>
+          <ul className="list-disc space-y-2 pl-5 text-sm text-slate-300">
             <li>建議使用彩色版本成績單，以提升綠色標題列的偵測穩定度。</li>
             <li>若辨識結果偏差，可調整 GPA 門檻、重新拍照或裁切，使表格更清晰。</li>
             <li>處理大量圖片時請耐心等待，OCR 需逐欄辨識以維持高準確度。</li>
