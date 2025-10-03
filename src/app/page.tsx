@@ -94,6 +94,8 @@ const defaultGpaRules: GpaRules = {
 
 type GpaRuleInputs = Record<keyof GpaRules, string>;
 
+const decimalInputPattern = /^(\d+(\.\d*)?|\.\d*)?$/;
+
 const MAX_IMAGE_DIMENSION = 2400;
 
 function cleanupText(value: string): string {
@@ -427,6 +429,10 @@ export default function Home() {
   }, []);
 
   const handleRuleInputChange = useCallback((key: keyof GpaRules, rawValue: string) => {
+    if (!decimalInputPattern.test(rawValue)) {
+      return;
+    }
+
     setGpaRuleInputValues((prev) => ({ ...prev, [key]: rawValue }));
   }, []);
 
