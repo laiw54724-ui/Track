@@ -705,58 +705,57 @@ export default function Home() {
   };
 
   const stepTone: Record<ProcessingStep["status"], string> = {
-    pending: "border-slate-200 bg-white",
-    active: "border-sky-200 bg-sky-50",
-    done: "border-emerald-200 bg-emerald-50",
-    error: "border-rose-200 bg-rose-50",
+    pending: "border-slate-700/60 bg-[#0b2234]",
+    active: "border-sky-400/40 bg-[#0f2f45]",
+    done: "border-emerald-400/40 bg-[#0c362f]",
+    error: "border-rose-500/40 bg-[#3b141a]",
   };
 
   const stepTextTone: Record<ProcessingStep["status"], string> = {
-    pending: "text-slate-600",
-    active: "text-sky-700",
-    done: "text-emerald-700",
-    error: "text-rose-700",
+    pending: "text-slate-200",
+    active: "text-sky-200",
+    done: "text-emerald-200",
+    error: "text-rose-200",
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-slate-100 via-white to-slate-100">
-      <div className="mx-auto flex w-full max-w-6xl flex-col gap-12 px-6 py-16">
-        <header className="rounded-3xl bg-white/90 p-10 text-center shadow-2xl ring-1 ring-slate-200 backdrop-blur">
-          <span className="mx-auto inline-flex items-center gap-2 rounded-full bg-sky-100 px-4 py-1 text-sm font-medium text-sky-700">
+    <div className="min-h-screen bg-[#020b16] text-slate-100">
+      <div className="mx-auto flex w-full max-w-5xl flex-col gap-10 px-5 py-12 sm:px-8 lg:px-10">
+        <header className="rounded-3xl border border-emerald-500/20 bg-gradient-to-br from-[#071b2a] to-[#0b2234] px-8 py-10 text-center shadow-[0_40px_120px_-50px_rgba(16,185,129,0.55)]">
+          <span className="mx-auto inline-flex items-center gap-2 rounded-full border border-emerald-500/40 bg-emerald-500/10 px-5 py-2 text-sm font-semibold text-emerald-200">
             智慧成績單助理 Smart Transcript Assistant
           </span>
-          <h1 className="mt-4 text-4xl font-bold leading-tight text-slate-900 sm:text-5xl">
-            上傳．校對．彙整．一次完成的智慧成績單流程
+          <h1 className="mt-5 text-4xl font-semibold leading-snug text-emerald-100 sm:text-5xl">
+            成績整理、排序與 GPA 計算，一頁完成
           </h1>
-          <p className="mx-auto mt-4 max-w-3xl text-base text-slate-600 sm:text-lg">
-            依照清楚的步驟完成成績單整理：上傳圖片、校正設定、啟動辨識，系統會自動產出成績排序與自訂 GPA
-            報表，幫助你快速掌握學習軌跡。
+          <p className="mx-auto mt-4 max-w-2xl text-sm text-slate-300 sm:text-base">
+            依照清楚的流程上傳成績單、調整辨識設定、啟動 OCR，系統即時回傳整理好的課程清單與客製化 GPA 統計。
           </p>
-          <div className="mt-6 flex flex-wrap justify-center gap-3 text-sm font-medium text-slate-500">
-            <span className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white px-4 py-2 shadow-sm">① 上傳成績單</span>
-            <span className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white px-4 py-2 shadow-sm">② 校對設定</span>
-            <span className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white px-4 py-2 shadow-sm">③ 智慧辨識</span>
-            <span className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white px-4 py-2 shadow-sm">④ 產出報告</span>
+          <div className="mt-7 flex flex-wrap justify-center gap-3 text-xs font-semibold text-emerald-200/80 sm:text-sm">
+            <span className="inline-flex items-center gap-2 rounded-full border border-emerald-500/30 bg-emerald-500/10 px-4 py-2">① 上傳成績單</span>
+            <span className="inline-flex items-center gap-2 rounded-full border border-emerald-500/30 bg-emerald-500/10 px-4 py-2">② 設定規則</span>
+            <span className="inline-flex items-center gap-2 rounded-full border border-emerald-500/30 bg-emerald-500/10 px-4 py-2">③ 智慧辨識</span>
+            <span className="inline-flex items-center gap-2 rounded-full border border-emerald-500/30 bg-emerald-500/10 px-4 py-2">④ 彙整結果</span>
           </div>
         </header>
 
-        <section className="rounded-3xl bg-white p-8 shadow-xl ring-1 ring-slate-200">
+        <section className="rounded-3xl border border-emerald-500/20 bg-[#071b2a] px-6 py-8 sm:px-8 sm:py-9 lg:px-10">
           <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-            <div className="flex items-center gap-3">
-              <span className="flex h-12 w-12 items-center justify-center rounded-full bg-sky-100 text-lg font-semibold text-sky-700">
+            <div className="flex items-center gap-4">
+              <span className="flex h-12 w-12 items-center justify-center rounded-2xl border border-emerald-500/40 bg-emerald-500/10 text-lg font-semibold text-emerald-200">
                 1
               </span>
               <div>
-                <h2 className="text-xl font-semibold text-slate-900">上傳成績單圖片</h2>
-                <p className="text-sm text-slate-500">
-                  支援一次匯入多張圖片，建議保留原始彩色檔案，可提升表格定位準確度。
+                <h2 className="text-lg font-semibold text-emerald-100 sm:text-xl">上傳成績單圖片</h2>
+                <p className="mt-1 text-xs text-slate-300 sm:text-sm">
+                  支援一次匯入多張圖片，保留彩色版本可提升綠色標題列的定位準確度。
                 </p>
               </div>
             </div>
-            <p className="text-xs text-slate-400">最多可上傳 20 張 PNG、JPG、JPEG 圖片</p>
+            <p className="text-xs text-slate-400">最多 20 張 PNG、JPG 或 JPEG 檔案</p>
           </div>
-          <label className="mt-6 flex cursor-pointer flex-col items-center justify-center gap-4 rounded-3xl border-2 border-dashed border-slate-300 bg-slate-50/80 p-10 text-center shadow-inner transition hover:border-sky-300 hover:bg-sky-50">
-            <span className="text-base font-medium text-slate-700">拖曳或點擊選擇檔案</span>
+          <label className="mt-6 flex cursor-pointer flex-col items-center justify-center gap-4 rounded-2xl border-2 border-dashed border-emerald-500/35 bg-[#041321] px-8 py-12 text-center transition hover:border-emerald-400/60 hover:bg-[#062035]">
+            <span className="text-base font-medium text-emerald-100">拖曳或點擊選擇成績單圖片</span>
             <span className="text-xs text-slate-400">支援 PNG、JPG、JPEG 等常見格式</span>
             <input
               type="file"
@@ -768,24 +767,24 @@ export default function Home() {
           </label>
           {images.length > 0 && (
             <div className="mt-8 space-y-5">
-              <h3 className="text-lg font-semibold text-slate-900">已選擇的成績單 ({images.length})</h3>
-              <div className="grid gap-6 sm:grid-cols-2 xl:grid-cols-3">
+              <h3 className="text-sm font-semibold text-emerald-100 sm:text-base">已選擇的成績單 ({images.length})</h3>
+              <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
                 {images.map((item, index) => (
                   <div
                     key={item.previewUrl}
-                    className="flex flex-col gap-4 rounded-3xl border border-slate-200 bg-white/90 p-5 shadow-md shadow-slate-200/80 ring-1 ring-slate-200"
+                    className="flex flex-col gap-4 rounded-2xl border border-emerald-500/20 bg-[#041321] p-4 shadow-[0_0_0_1px_rgba(16,185,129,0.08)]"
                   >
                     <div className="flex items-center justify-between">
-                      <span className="text-sm font-medium text-slate-700">{item.termLabel}</span>
+                      <span className="text-xs font-medium text-emerald-100 sm:text-sm">{item.termLabel}</span>
                       <button
                         type="button"
-                        className="text-xs font-semibold text-rose-500 transition hover:text-rose-600"
+                        className="text-xs font-semibold text-rose-300 transition hover:text-rose-200"
                         onClick={() => handleRemoveImage(index)}
                       >
                         移除
                       </button>
                     </div>
-                    <div className="relative h-48 w-full overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
+                    <div className="relative h-44 w-full overflow-hidden rounded-xl border border-emerald-500/20 bg-[#020b16]">
                       <img
                         src={item.previewUrl}
                         alt={item.termLabel}
@@ -800,62 +799,62 @@ export default function Home() {
           )}
         </section>
 
-        <section className="rounded-3xl bg-white p-8 shadow-xl ring-1 ring-slate-200">
+        <section className="rounded-3xl border border-emerald-500/20 bg-[#071b2a] px-6 py-8 sm:px-8 sm:py-9 lg:px-10">
           <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-            <div className="flex items-center gap-3">
-              <span className="flex h-12 w-12 items-center justify-center rounded-full bg-sky-100 text-lg font-semibold text-sky-700">
+            <div className="flex items-center gap-4">
+              <span className="flex h-12 w-12 items-center justify-center rounded-2xl border border-emerald-500/40 bg-emerald-500/10 text-lg font-semibold text-emerald-200">
                 2
               </span>
               <div>
-                <h2 className="text-xl font-semibold text-slate-900">客製化 GPA 規則</h2>
-                <p className="text-sm text-slate-500">
-                  使用學校常見等第標準（80 分 = 4.0）為預設值，可依個人規則調整臨界點。
+                <h2 className="text-lg font-semibold text-emerald-100 sm:text-xl">設定客製化 GPA 規則</h2>
+                <p className="mt-1 text-xs text-slate-300 sm:text-sm">
+                  預設為 80 分 = 4.0、70 分 = 3.0、60 分 = 2.0，可依校系規定調整臨界值。
                 </p>
               </div>
             </div>
-            <p className="text-xs text-slate-400">調整後立即影響下方統計資訊</p>
+            <p className="text-xs text-slate-400">調整後會立即反映於下方統計</p>
           </div>
           <div className="mt-6 grid gap-4 sm:grid-cols-3">
-            <label className="flex flex-col gap-2 rounded-2xl border border-slate-200 bg-slate-50 p-4">
-              <span className="text-sm font-medium text-slate-600">A (4.0) 門檻</span>
+            <label className="flex flex-col gap-2 rounded-2xl border border-emerald-500/20 bg-[#041321] p-5">
+              <span className="text-xs font-semibold text-slate-300 sm:text-sm">A (4.0) 門檻</span>
               <input
                 type="number"
                 value={gpaRules.gradeA}
                 onChange={(event) => handleRuleChange("gradeA", Number(event.target.value))}
-                className="rounded-lg border border-slate-200 bg-white px-3 py-2 text-slate-700 transition focus:border-sky-400 focus:outline-none focus:ring-2 focus:ring-sky-100"
+                className="rounded-lg border border-emerald-500/30 bg-[#020b16] px-3 py-2 text-sm text-emerald-100 focus:border-emerald-300 focus:outline-none focus:ring-2 focus:ring-emerald-400/30"
               />
             </label>
-            <label className="flex flex-col gap-2 rounded-2xl border border-slate-200 bg-slate-50 p-4">
-              <span className="text-sm font-medium text-slate-600">B (3.0) 門檻</span>
+            <label className="flex flex-col gap-2 rounded-2xl border border-emerald-500/20 bg-[#041321] p-5">
+              <span className="text-xs font-semibold text-slate-300 sm:text-sm">B (3.0) 門檻</span>
               <input
                 type="number"
                 value={gpaRules.gradeB}
                 onChange={(event) => handleRuleChange("gradeB", Number(event.target.value))}
-                className="rounded-lg border border-slate-200 bg-white px-3 py-2 text-slate-700 transition focus:border-sky-400 focus:outline-none focus:ring-2 focus:ring-sky-100"
+                className="rounded-lg border border-emerald-500/30 bg-[#020b16] px-3 py-2 text-sm text-emerald-100 focus:border-emerald-300 focus:outline-none focus:ring-2 focus:ring-emerald-400/30"
               />
             </label>
-            <label className="flex flex-col gap-2 rounded-2xl border border-slate-200 bg-slate-50 p-4">
-              <span className="text-sm font-medium text-slate-600">C (2.0) 門檻</span>
+            <label className="flex flex-col gap-2 rounded-2xl border border-emerald-500/20 bg-[#041321] p-5">
+              <span className="text-xs font-semibold text-slate-300 sm:text-sm">C (2.0) 門檻</span>
               <input
                 type="number"
                 value={gpaRules.gradeC}
                 onChange={(event) => handleRuleChange("gradeC", Number(event.target.value))}
-                className="rounded-lg border border-slate-200 bg-white px-3 py-2 text-slate-700 transition focus:border-sky-400 focus:outline-none focus:ring-2 focus:ring-sky-100"
+                className="rounded-lg border border-emerald-500/30 bg-[#020b16] px-3 py-2 text-sm text-emerald-100 focus:border-emerald-300 focus:outline-none focus:ring-2 focus:ring-emerald-400/30"
               />
             </label>
           </div>
         </section>
 
-        <section className="rounded-3xl bg-white p-8 shadow-xl ring-1 ring-slate-200">
+        <section className="rounded-3xl border border-emerald-500/20 bg-[#071b2a] px-6 py-8 sm:px-8 sm:py-9 lg:px-10">
           <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-            <div className="flex items-center gap-3">
-              <span className="flex h-12 w-12 items-center justify-center rounded-full bg-sky-100 text-lg font-semibold text-sky-700">
+            <div className="flex items-center gap-4">
+              <span className="flex h-12 w-12 items-center justify-center rounded-2xl border border-emerald-500/40 bg-emerald-500/10 text-lg font-semibold text-emerald-200">
                 3
               </span>
               <div>
-                <h2 className="text-xl font-semibold text-slate-900">啟動智慧辨識流程</h2>
-                <p className="text-sm text-slate-500">
-                  系統會自動定位表格、進行 OCR、整理課程與統計數據。進度會即時呈現於下方。
+                <h2 className="text-lg font-semibold text-emerald-100 sm:text-xl">啟動智慧辨識流程</h2>
+                <p className="mt-1 text-xs text-slate-300 sm:text-sm">
+                  自動定位表格、進行 OCR、整理課程與統計數據，進度會即時顯示於下方。
                 </p>
               </div>
             </div>
@@ -863,7 +862,7 @@ export default function Home() {
               type="button"
               onClick={processTranscripts}
               disabled={isProcessing || images.length === 0}
-              className="inline-flex items-center justify-center gap-2 rounded-full bg-sky-500 px-6 py-3 text-sm font-semibold text-white shadow-lg shadow-sky-200 transition hover:bg-sky-400 disabled:cursor-not-allowed disabled:bg-slate-300"
+              className="inline-flex items-center justify-center gap-2 rounded-full bg-emerald-500 px-6 py-3 text-sm font-semibold text-[#041321] shadow-[0_20px_45px_-25px_rgba(16,185,129,0.8)] transition hover:bg-emerald-400 disabled:cursor-not-allowed disabled:bg-slate-600 disabled:text-slate-300"
             >
               {isProcessing ? "系統分析中..." : "開始辨識"}
             </button>
@@ -871,22 +870,22 @@ export default function Home() {
 
           <div className="mt-6 space-y-4">
             {statusMessage && (
-              <div className="rounded-2xl border border-sky-100 bg-sky-50 px-4 py-3 text-sm text-sky-700">
+              <div className="rounded-2xl border border-emerald-500/30 bg-emerald-500/10 px-4 py-3 text-sm text-emerald-100">
                 {statusMessage}
               </div>
             )}
 
-            <div className="rounded-3xl border border-slate-200 bg-slate-50 p-6">
-              <h3 className="text-base font-semibold text-slate-800">即時處理進度</h3>
-              <p className="mt-1 text-xs text-slate-500">
-                依序顯示每個步驟的狀態與細節說明，便於掌握整體流程。
+            <div className="rounded-2xl border border-emerald-500/20 bg-[#041321] p-6">
+              <h3 className="text-sm font-semibold text-emerald-100 sm:text-base">即時處理進度</h3>
+              <p className="mt-1 text-xs text-slate-400">
+                依序顯示每個步驟的狀態與細節說明，掌握整體辨識過程。
               </p>
               <ul className="mt-4 space-y-3">
                 {processingSteps.length > 0 ? (
                   processingSteps.map((step) => (
                     <li
                       key={step.id}
-                      className={`rounded-2xl border px-4 py-3 shadow-sm transition ${stepTone[step.status]}`}
+                      className={`rounded-2xl border px-4 py-4 transition ${stepTone[step.status]}`}
                     >
                       <div className="flex items-start gap-3">
                         <span className="text-xl" aria-hidden="true">{stepIcons[step.status]}</span>
@@ -894,7 +893,7 @@ export default function Home() {
                           <p className={`text-sm font-semibold ${stepTextTone[step.status]}`}>
                             {step.label}
                           </p>
-                          <p className="mt-1 text-xs text-slate-500">
+                          <p className="mt-1 text-xs text-slate-300">
                             {step.detail ?? "等待開始"}
                           </p>
                         </div>
@@ -902,7 +901,7 @@ export default function Home() {
                     </li>
                   ))
                 ) : (
-                  <li className="rounded-2xl border border-dashed border-slate-200 bg-white px-4 py-5 text-center text-sm text-slate-400">
+                  <li className="rounded-2xl border border-dashed border-emerald-500/25 bg-[#020b16] px-4 py-6 text-center text-sm text-slate-400">
                     尚未開始辨識。請完成前兩步驟後點擊「開始辨識」。
                   </li>
                 )}
@@ -911,55 +910,62 @@ export default function Home() {
           </div>
         </section>
 
-        <section className="rounded-3xl bg-white p-8 shadow-xl ring-1 ring-slate-200">
+        <section className="rounded-3xl border border-emerald-500/20 bg-[#071b2a] px-6 py-8 sm:px-8 sm:py-9 lg:px-10">
           <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-            <div className="flex items-center gap-3">
-              <span className="flex h-12 w-12 items-center justify-center rounded-full bg-sky-100 text-lg font-semibold text-sky-700">
+            <div className="flex items-center gap-4">
+              <span className="flex h-12 w-12 items-center justify-center rounded-2xl border border-emerald-500/40 bg-emerald-500/10 text-lg font-semibold text-emerald-200">
                 4
               </span>
               <div>
-                <h2 className="text-xl font-semibold text-slate-900">彙整成果與成績排序</h2>
-                <p className="text-sm text-slate-500">
-                  完成辨識後，所有課程會在此呈現，可依任一欄位即時排序並檢視統計概覽。
+                <h2 className="text-lg font-semibold text-emerald-100 sm:text-xl">成果總覽與排序</h2>
+                <p className="mt-1 text-xs text-slate-300 sm:text-sm">
+                  彙整所有課程資料，提供學分統計、成績排序與自訂 GPA 計算。
                 </p>
               </div>
             </div>
-            <p className="text-xs text-slate-400">已擷取 {records.length} 筆課程資料</p>
+            <p className="text-xs text-slate-400">點擊欄位標題即可切換排序方式</p>
           </div>
 
-          <div className="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-            <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
-              <p className="text-xs font-medium uppercase tracking-wide text-slate-500">總學分</p>
-              <p className="mt-2 text-2xl font-semibold text-slate-900">{formatNumber(summary.totalCredits, 1)}</p>
+          <div className="mt-6 grid gap-4 rounded-2xl border border-emerald-500/20 bg-[#041321] p-6 sm:grid-cols-2 lg:grid-cols-4">
+            <div className="flex flex-col gap-1">
+              <span className="text-[11px] uppercase tracking-wide text-slate-400">總學分</span>
+              <span className="text-2xl font-semibold text-emerald-100">
+                {formatNumber(summary.totalCredits, 1)}
+              </span>
             </div>
-            <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
-              <p className="text-xs font-medium uppercase tracking-wide text-slate-500">加權平均分數</p>
-              <p className="mt-2 text-2xl font-semibold text-slate-900">{formatNumber(summary.weightedScore)}</p>
+            <div className="flex flex-col gap-1">
+              <span className="text-[11px] uppercase tracking-wide text-slate-400">加權平均分數</span>
+              <span className="text-2xl font-semibold text-emerald-100">
+                {formatNumber(summary.weightedScore)}
+              </span>
             </div>
-            <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
-              <p className="text-xs font-medium uppercase tracking-wide text-slate-500">算術平均分數</p>
-              <p className="mt-2 text-2xl font-semibold text-slate-900">{formatNumber(summary.averageScore)}</p>
+            <div className="flex flex-col gap-1">
+              <span className="text-[11px] uppercase tracking-wide text-slate-400">算術平均分數</span>
+              <span className="text-2xl font-semibold text-emerald-100">
+                {formatNumber(summary.averageScore)}
+              </span>
             </div>
-            <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
-              <p className="text-xs font-medium uppercase tracking-wide text-slate-500">自訂 GPA</p>
-              <p className="mt-2 text-2xl font-semibold text-slate-900">{formatNumber(summary.gpa)}</p>
+            <div className="flex flex-col gap-1">
+              <span className="text-[11px] uppercase tracking-wide text-slate-400">自訂 GPA</span>
+              <span className="text-2xl font-semibold text-emerald-100">
+                {formatNumber(summary.gpa)}
+              </span>
             </div>
           </div>
-
           <div className="mt-6 overflow-x-auto">
-            <table className="min-w-full divide-y divide-slate-200 text-sm text-slate-700">
-              <thead className="bg-slate-50 text-xs uppercase tracking-wide text-slate-500">
+            <table className="min-w-full divide-y divide-emerald-500/20 text-sm text-slate-200">
+              <thead className="bg-[#041b2a] text-xs uppercase tracking-wide text-emerald-200">
                 <tr>
-                  <th className="px-4 py-3 text-left">學期</th>
+                  <th className="px-3 py-3 text-left">學期</th>
                   {columnLayout.map((column) => (
                     <th
                       key={column.key}
-                      className="cursor-pointer px-4 py-3 text-left transition hover:text-sky-500"
+                      className="cursor-pointer px-3 py-3 text-left transition hover:text-emerald-200/80"
                       onClick={() => handleSort(column.key as keyof CourseRecord)}
                     >
                       {column.label}
                       {sortKey === column.key && (
-                        <span className="ml-1 text-sky-500">
+                        <span className="ml-1 text-emerald-300">
                           {sortDirection === "asc" ? "▲" : "▼"}
                         </span>
                       )}
@@ -967,29 +973,37 @@ export default function Home() {
                   ))}
                 </tr>
               </thead>
-              <tbody className="divide-y divide-slate-100">
-                {sortedRecords.map((record) => (
-                  <tr key={record.id} className="hover:bg-slate-50">
-                    <td className="px-4 py-3 text-slate-500">{record.term}</td>
-                    <td className="px-4 py-3 font-medium text-slate-800">{record.courseNumber || "-"}</td>
-                    <td className="px-4 py-3">{record.requirement || "-"}</td>
-                    <td className="px-4 py-3">{record.courseName || "-"}</td>
-                    <td className="px-4 py-3">{record.englishName || "-"}</td>
-                    <td className="px-4 py-3">{record.courseCode || "-"}</td>
-                    <td className="px-4 py-3">{record.stage || "-"}</td>
-                    <td className="px-4 py-3 text-right">
+              <tbody className="divide-y divide-emerald-500/10">
+                {sortedRecords.map((record, index) => (
+                  <tr
+                    key={record.id}
+                    className={index % 2 === 0 ? "bg-[#031321]" : "bg-[#04192a]"}
+                  >
+                    <td className="px-3 py-3 text-slate-300">{record.term}</td>
+                    <td className="px-3 py-3 font-medium text-emerald-100">
+                      {record.courseNumber || "-"}
+                    </td>
+                    <td className="px-3 py-3 text-slate-300">{record.requirement || "-"}</td>
+                    <td className="px-3 py-3 text-slate-300">{record.courseName || "-"}</td>
+                    <td className="px-3 py-3 text-slate-300">{record.englishName || "-"}</td>
+                    <td className="px-3 py-3 text-slate-300">{record.courseCode || "-"}</td>
+                    <td className="px-3 py-3 text-slate-300">{record.stage || "-"}</td>
+                    <td className="px-3 py-3 text-right text-emerald-100">
                       {record.credits !== null ? formatNumber(record.credits, 1) : "-"}
                     </td>
-                    <td className="px-4 py-3 text-right">
+                    <td className="px-3 py-3 text-right text-emerald-100">
                       {record.score !== null ? formatNumber(record.score) : "-"}
                     </td>
-                    <td className="px-4 py-3 text-slate-500">{record.remarks || "-"}</td>
+                    <td className="px-3 py-3 text-slate-400">{record.remarks || "-"}</td>
                   </tr>
                 ))}
                 {!records.length && (
                   <tr>
-                    <td colSpan={columnLayout.length + 1} className="px-4 py-12 text-center text-sm text-slate-400">
-                      尚未有資料，請完成上方流程後重新整理結果。
+                    <td
+                      colSpan={columnLayout.length + 1}
+                      className="px-3 py-10 text-center text-slate-400"
+                    >
+                      尚未有資料，請上傳成績單並開始辨識。
                     </td>
                   </tr>
                 )}
@@ -998,18 +1012,12 @@ export default function Home() {
           </div>
         </section>
 
-        <section className="rounded-3xl bg-white p-8 shadow-xl ring-1 ring-slate-200">
-          <h2 className="text-xl font-semibold text-slate-900">最佳使用小撇步</h2>
-          <ul className="mt-4 space-y-3 text-sm text-slate-600">
-            <li className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3">
-              建議使用彩色版本成績單，綠色標題列較易辨識，能提升表格定位與切割精準度。
-            </li>
-            <li className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3">
-              若文字出現辨識錯誤，可重新裁切圖片或調整清晰度，再次上傳後重新分析。
-            </li>
-            <li className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3">
-              大量成績單需要較長時間處理，請保持網頁開啟，系統會在完成時提示結果。
-            </li>
+        <section className="rounded-3xl border border-emerald-500/20 bg-[#071b2a] px-6 py-8 sm:px-8 sm:py-9 lg:px-10">
+          <h2 className="text-lg font-semibold text-emerald-100 sm:text-xl">使用小提示</h2>
+          <ul className="mt-4 list-disc space-y-2 pl-5 text-sm text-slate-300">
+            <li>建議使用彩色版本成績單，以提升綠色標題列的偵測穩定度。</li>
+            <li>若辨識結果偏差，可調整 GPA 門檻、重新拍照或裁切，使表格更清晰。</li>
+            <li>處理大量圖片時請耐心等待，OCR 需逐欄辨識以維持高準確度。</li>
           </ul>
         </section>
       </div>
